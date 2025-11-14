@@ -10,7 +10,8 @@ import { LocalStrategy } from './local.strategy';
 import { JwtStrategy } from './jwt.strategy';
 import { GoogleStrategy } from './google.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { EmailModule } from '../email/email.module'; // <-- TAMBAHAN BARU
+import { EmailModule } from '../email/email.module';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
@@ -22,12 +23,12 @@ import { EmailModule } from '../email/email.module'; // <-- TAMBAHAN BARU
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET')!,
-        signOptions: { expiresIn: '60m' },
+        signOptions: { expiresIn: '1440m' },
       }),
       inject: [ConfigService],
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy, RolesGuard],
 })
 export class AuthModule {}

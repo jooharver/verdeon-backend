@@ -14,23 +14,24 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { AuthGuard } from '@nestjs/passport'; // <-- Import-nya ada di sini
+import { AuthGuard } from '@nestjs/passport';
 
-/**
- * Controller ini HANYA untuk manajemen data User (CRUD).
- * Semua endpoint di sini wajib login (mengirim token JWT).
- * Registrasi publik ada di AuthController.
- */
+// --- IMPORT BARU ---
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from './enums/role.enum';
+// --- AKHIR IMPORT BARU ---
+
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   /**
-   * Endpoint POST /user (Membuat user baru)
-   * Diamankan: Hanya user yang terautentikasi (misal: admin)
-   * yang bisa membuat user baru secara manual via endpoint ini.
+   * Endpoint POST /user
+   * Sesuai permintaan: Hanya ADMIN
    */
-  @UseGuards(AuthGuard('jwt')) // <-- Decorator HARUSNYA di sini
+  @UseGuards(AuthGuard('jwt'), RolesGuard) // <-- Terapkan Guard
+  @Roles(UserRole.ADMIN) // <-- Tentukan Role
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
@@ -38,9 +39,10 @@ export class UserController {
 
   /**
    * Endpoint GET /user (Lihat semua user)
-   * Diamankan: Harus login (kirim token) untuk mengakses.
+   * Asumsi: Hanya ADMIN
    */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Get()
   findAll() {
     return this.userService.findAll();
@@ -48,9 +50,10 @@ export class UserController {
 
   /**
    * Endpoint GET /user/:id (Lihat detail user)
-   * Diamankan: Harus login (kirim token) untuk mengakses.
+   * Asumsi: ADMIN (bisa lihat semua) atau User ybs (bisa lihat data sendiri)
    */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.BUYER, UserRole.ISSUER, UserRole.AUDITOR)
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.userService.findOne(id);
@@ -58,9 +61,10 @@ export class UserController {
 
   /**
    * Endpoint PATCH /user/:id (Update user)
-   * Diamankan: Harus login (kirim token) untuk mengakses.
+   * Sesuai permintaan: ADMIN (bisa edit semua) atau User ybs (edit data sendiri)
    */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.BUYER, UserRole.ISSUER, UserRole.AUDITOR)
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -71,9 +75,10 @@ export class UserController {
 
   /**
    * Endpoint DELETE /user/:id (Hapus user)
-   * Diamankan: Harus login (kirim token) untuk mengakses.
+   * Sesuai permintaan: ADMIN (bisa hapus semua) atau User ybs (hapus data sendiri)
    */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.BUYER, UserRole.ISSUER, UserRole.AUDITOR)
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.userService.remove(id);

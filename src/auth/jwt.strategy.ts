@@ -3,25 +3,27 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config'; // <--- TAMBAH: Import ConfigService
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(
-    private configService: ConfigService, // <--- TAMBAH: Injeksi ConfigService
-  ) {
+  constructor(private configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      // AMBIL SECRET DARI .ENV, SAMA SEPERTI DI AUTH.MODULE
-      secretOrKey: configService.get<string>('JWT_SECRET')!, // <--- UBAH INI
+      secretOrKey: configService.get<string>('JWT_SECRET')!,
     });
   }
 
-  // Fungsi ini dipanggil jika token valid
+  // --- UBAH FUNGSI INI ---
   async validate(payload: any) {
-    // Data 'payload' ini akan otomatis ditambahkan ke 'request.user'
-    // 'sub' adalah 'subject', yang kita isi dengan user.id
-    return { userId: payload.sub, email: payload.email, role: payload.role }; // <--- (Opsional) Tambahkan 'role' jika ada di payload
+    // 'payload' adalah isi dari JWT (dibuat di auth.service.ts)
+    // Pastikan 'login' di AuthService menyertakan 'sub' dan 'role'
+    return {
+      userId: payload.sub, // <-- 'sub' adalah ID user
+      email: payload.email,
+      role: payload.role, // <-- Tambahkan role
+    };
   }
+  // --- AKHIR PERUBAHAN ---
 }

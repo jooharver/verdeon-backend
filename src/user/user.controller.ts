@@ -1,3 +1,5 @@
+// src/user/user.controller.ts
+
 import {
   Controller,
   Get,
@@ -7,43 +9,58 @@ import {
   Param,
   Delete,
   ParseIntPipe,
-  UseGuards, // <-- Import UseGuards
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { AuthGuard } from '@nestjs/passport'; // <-- Import AuthGuard
+import { AuthGuard } from '@nestjs/passport'; // <-- Import-nya ada di sini
 
+/**
+ * Controller ini HANYA untuk manajemen data User (CRUD).
+ * Semua endpoint di sini wajib login (mengirim token JWT).
+ * Registrasi publik ada di AuthController.
+ */
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  // Endpoint POST /user (Registrasi)
-  // TIDAK perlu diamankan, agar user baru bisa mendaftar
+  /**
+   * Endpoint POST /user (Membuat user baru)
+   * Diamankan: Hanya user yang terautentikasi (misal: admin)
+   * yang bisa membuat user baru secara manual via endpoint ini.
+   */
+  @UseGuards(AuthGuard('jwt')) // <-- Decorator HARUSNYA di sini
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }
 
-  // Endpoint GET /user (Lihat semua user)
-  // Harus login (kirim token) untuk mengakses
-  @UseGuards(AuthGuard('jwt')) // <-- Diamankan
+  /**
+   * Endpoint GET /user (Lihat semua user)
+   * Diamankan: Harus login (kirim token) untuk mengakses.
+   */
+  @UseGuards(AuthGuard('jwt'))
   @Get()
   findAll() {
     return this.userService.findAll();
   }
 
-  // Endpoint GET /user/:id (Lihat detail user)
-  // Harus login (kirim token) untuk mengakses
-  @UseGuards(AuthGuard('jwt')) // <-- Diamankan
+  /**
+   * Endpoint GET /user/:id (Lihat detail user)
+   * Diamankan: Harus login (kirim token) untuk mengakses.
+   */
+  @UseGuards(AuthGuard('jwt'))
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.userService.findOne(id);
   }
 
-  // Endpoint PATCH /user/:id (Update user)
-  // Harus login (kirim token) untuk mengakses
-  @UseGuards(AuthGuard('jwt')) // <-- Diamankan
+  /**
+   * Endpoint PATCH /user/:id (Update user)
+   * Diamankan: Harus login (kirim token) untuk mengakses.
+   */
+  @UseGuards(AuthGuard('jwt'))
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -52,9 +69,11 @@ export class UserController {
     return this.userService.update(id, updateUserDto);
   }
 
-  // Endpoint DELETE /user/:id (Hapus user)
-  // Harus login (kirim token) untuk mengakses
-  @UseGuards(AuthGuard('jwt')) // <-- Diamankan
+  /**
+   * Endpoint DELETE /user/:id (Hapus user)
+   * Diamankan: Harus login (kirim token) untuk mengakses.
+   */
+  @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.userService.remove(id);

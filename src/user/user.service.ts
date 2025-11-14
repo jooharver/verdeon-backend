@@ -16,20 +16,15 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    // Inisialisasi hashedPassword sebagai 'undefined'
-    // Tipe ini cocok dengan 'password?: string' di DTO.
     let hashedPassword: string | undefined = undefined;
 
-    // Hanya hash password JIKA disediakan (untuk login lokal)
+    // Hanya hash password JIKA disediakan
     if (createUserDto.password) {
       hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     }
 
-    // Buat entitas user baru
     const newUser = this.userRepository.create({
-      ...createUserDto, // Ini akan ambil 'name' dan 'email'
-      // Ini sekarang 'string' atau 'undefined', yang akan
-      // ditangani TypeORM sebagai 'string' atau 'NULL' di DB.
+      ...createUserDto, // Mengambil name, email, token, isVerified
       password: hashedPassword,
     });
 
@@ -58,6 +53,7 @@ export class UserService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
+    // Hash password JIKA password baru disediakan di DTO
     if (updateUserDto.password) {
       const hashedPassword = await bcrypt.hash(updateUserDto.password, 10);
       userToUpdate.password = hashedPassword;
@@ -74,7 +70,17 @@ export class UserService {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    // Fungsi findOne dari TypeORM mengembalikan User atau null
     return this.userRepository.findOne({ where: { email } });
   }
+
+  // --- TAMBAHAN BARU ---
+  async findByToken(token: string): Promise<User | null> {
+    return this.userRepository.findOne({ where: { verificationToken: token } });
+  }
+
+  async saveUser(user: User): Promise<User> {
+    // Menyimpan instance User yang sudah ada (digunakan oleh verifyEmail)
+    return this.userRepository.save(user);
+  }
+  // --- AKHIR TAMBAHAN ---
 }

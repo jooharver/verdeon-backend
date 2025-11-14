@@ -1,19 +1,31 @@
 // src/user/dto/update-user.dto.ts
 
-// Kita asumsikan kamu menggunakan @nestjs/mapped-types
-// Jika tidak, buat DTO ini secara manual
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateUserDto } from './create-user.dto';
-import { IsEnum, IsOptional } from 'class-validator'; // <-- IMPORT BARU
-import { UserRole } from '../enums/role.enum'; // <-- IMPORT BARU
+import {
+  IsEnum,
+  IsOptional,
+  IsBoolean, // <-- IMPORT BARU
+} from 'class-validator';
+import { UserRole } from '../enums/role.enum';
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {
-  // Field 'name', 'email', 'password' sudah di-inherit
-  // dan bersifat opsional dari PartialType
+  @IsOptional()
+  @IsEnum(UserRole)
+  role?: UserRole;
 
   // --- TAMBAHAN BARU ---
   @IsOptional()
-  @IsEnum(UserRole) // <-- Validasi bahwa nilainya harus ada di Enum
-  role?: UserRole;
+  @IsBoolean()
+  isVerified?: boolean;
   // --- AKHIR TAMBAHAN ---
+
+  // --- 🚀 PERUBAHAN DI SINI 🚀 ---
+  // Menambahkan validasi untuk theme saat user update profil
+  @IsOptional()
+  @IsEnum(['light', 'dark'], {
+    message: 'Theme must be either light or dark',
+  })
+  theme?: string;
+  // --- AKHIR PERUBAHAN ---
 }

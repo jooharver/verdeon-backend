@@ -2,20 +2,32 @@
 
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config'; // <--- TAMBAHKAN INI
+import { ConfigModule } from '@nestjs/config'; 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
+import { ProjectModule } from './project/project.module';
+import { SeederModule } from '../database/seeder/seeder.module';
+import { ServeStaticModule } from '@nestjs/serve-static'; // <--- BARU
+import { join } from 'path'; // <--- BARU
+import * as process from 'process'
 
 @Module({
   imports: [
-    // --- TAMBAHKAN INI DI ATAS ---
     ConfigModule.forRoot({
-      isGlobal: true, // Membuatnya tersedia di semua modul
-      envFilePath: '.env', // Menentukan file .env
+      isGlobal: true, 
+      envFilePath: '.env', 
     }),
-    // ------------------------------
+
+    // --- KONFIGURASI STATIC FILES (SOLUSI GAMBAR) ---
+    ServeStaticModule.forRoot({
+      // MENGGUNAKAN process.cwd() UNTUK JALUR ABSOLUT KE ROOT PROYEK
+      rootPath: join(process.cwd(), 'uploads'), // <--- KOREKSI KRITIS
+      serveRoot: '/uploads', 
+    }),
+    // ----------------------------------------------------
+
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: 'localhost',
@@ -28,6 +40,8 @@ import { AuthModule } from './auth/auth.module';
     }),
     UserModule,
     AuthModule,
+    ProjectModule,
+    SeederModule,
   ],
   controllers: [AppController],
   providers: [AppService],

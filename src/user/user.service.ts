@@ -7,6 +7,7 @@ import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
+import { UserRole } from './enums/role.enum';
 
 @Injectable()
 export class UserService {
@@ -33,6 +34,14 @@ export class UserService {
 
   async findAll(): Promise<User[]> {
     return this.userRepository.find();
+  }
+
+    // --- METHOD BARU ---
+  async findAllAuditors() {
+    return this.userRepository.find({
+      where: { role: UserRole.AUDITOR }, // Filter berdasarkan Role
+      select: ['id', 'name', 'email'],   // Ambil data penting saja
+    });
   }
 
   async findOne(id: number): Promise<User> {
@@ -83,4 +92,5 @@ export class UserService {
     return this.userRepository.save(user);
   }
   // --- AKHIR TAMBAHAN ---
+
 }

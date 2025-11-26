@@ -1,10 +1,16 @@
 // src/user/entities/user.entity.ts
 
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany, //
+} from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { UserRole } from '../enums/role.enum';
+import { Project } from '../../project/entities/project.entity'; // <-- IMPORT BARU
 
-@Entity()
+@Entity('user')
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
@@ -36,22 +42,28 @@ export class User {
   })
   verificationToken: string | null;
 
-  // --- TAMBAHAN BARU ---
-  // Kolom ini akan menyimpan URL gambar avatar dari Google
+  // Ini kodemu, sudah benar
   @Column({
-    type: 'varchar', // varchar cukup untuk URL
+    type: 'varchar',
     nullable: true,
   })
   avatarUrl: string | null;
-  // --- AKHIR TAMBAHAN ---
 
-  // --- 🚀 PERUBAHAN DI SINI 🚀 ---
-  // Menambahkan kolom theme sesuai permintaan
+  // Ini kodemu, sudah benar
   @Column({
     type: 'enum',
-    enum: ['light', 'dark'], // Hanya 2 nilai ini yang diizinkan
+    enum: ['light', 'dark'],
     default: 'light',
   })
   theme: string;
-  // --- AKHIR PERUBAHAN ---
+
+  // --- 🚀 TAMBAHAN RELASI YANG WAJIB ADA 🚀 ---
+  // (Ini yang akan memperbaiki error 'unknown' dan 'property does not exist')
+  
+  @OneToMany(() => Project, (project) => project.issuer)
+  issuedProjects: Project[];
+
+  @OneToMany(() => Project, (project) => project.auditor)
+  auditedProjects: Project[];
+  // --- AKHIR TAMBAHAN ---
 }

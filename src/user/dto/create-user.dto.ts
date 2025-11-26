@@ -4,11 +4,12 @@ import {
   IsEmail,
   IsNotEmpty,
   IsString,
-  IsUrl,
   MinLength,
   IsOptional,
-  IsBoolean, // <-- IMPORT BARU
+  IsBoolean,
+  IsEnum, // <-- IMPORT BARU
 } from 'class-validator';
+import { UserRole } from '../enums/role.enum'; // <-- IMPORT BARU
 
 export class CreateUserDto {
   @IsString()
@@ -29,16 +30,23 @@ export class CreateUserDto {
   @IsString()
   verificationToken?: string;
 
-  // --- TAMBAHAN BARU ---
   @IsOptional()
   @IsBoolean()
   isVerified?: boolean;
+
+  // --- 🚀 TAMBAHAN BARU 🚀 ---
+  // (Untuk memperbaiki Error 1)
+  @IsOptional()
+  @IsEnum(UserRole)
+  role?: UserRole;
   // --- AKHIR TAMBAHAN ---
-  // --- TAMBAHAN BARU UNTUK FIX ERROR ---
-  // Dibuat opsional karena register lokal tidak mengirim avatarUrl
+
+  // ... (properti 'avatarUrl' dan 'theme' mungkin ada di sini juga)
   @IsOptional()
   @IsString()
-  @IsUrl({}, { message: 'Avatar URL must be a valid URL' })
-  avatarUrl?: string;
-  // --- AKHIR TAMBAHAN ---
+  avatarUrl?: string | null;
+
+  @IsOptional()
+  @IsEnum(['light', 'dark'])
+  theme?: string;
 }

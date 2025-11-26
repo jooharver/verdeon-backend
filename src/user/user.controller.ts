@@ -15,43 +15,52 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthGuard } from '@nestjs/passport';
-
-// --- IMPORT BARU ---
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from './enums/role.enum';
-// --- AKHIR IMPORT BARU ---
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  /**
-   * Endpoint POST /user
-   * Sesuai permintaan: Hanya ADMIN
-   */
-  @UseGuards(AuthGuard('jwt'), RolesGuard) // <-- Terapkan Guard
-  @Roles(UserRole.ADMIN) // <-- Tentukan Role
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
+    const adminCreateDto = {
+      ...createUserDto,
+      isVerified: true,
+
+      // --- 🚀 PERBAIKAN DI SINI 🚀 ---
+      // (Untuk memperbaiki Error 2)
+      // Ganti 'null' menjadi 'undefined' agar cocok dengan tipe DTO
+      verificationToken: undefined,
+      // --- AKHIR PERBAIKAN ---
+
+      // (Error 1 sudah diperbaiki oleh DTO di atas)
+      role: createUserDto.role || UserRole.BUYER,
+    };
+
+    return this.userService.create(adminCreateDto);
   }
 
-  /**
-   * Endpoint GET /user (Lihat semua user)
-   * Asumsi: Hanya ADMIN
-   */
+  // ... (Endpoint findAll, findOne, update, remove tidak berubah) ...
+
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @Get()
   findAll() {
     return this.userService.findAll();
   }
+    // --- ENDPOINT BARU: Get List Auditor ---
+  // Hanya Admin yang boleh lihat list auditor
+  @Get('auditors')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async findAuditors() {
+    return this.userService.findAllAuditors();
+  }
 
-  /**
-   * Endpoint GET /user/:id (Lihat detail user)
-   * Asumsi: ADMIN (bisa lihat semua) atau User ybs (bisa lihat data sendiri)
-   */
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.BUYER, UserRole.ISSUER, UserRole.AUDITOR)
   @Get(':id')
@@ -59,10 +68,6 @@ export class UserController {
     return this.userService.findOne(id);
   }
 
-  /**
-   * Endpoint PATCH /user/:id (Update user)
-   * Sesuai permintaan: ADMIN (bisa edit semua) atau User ybs (edit data sendiri)
-   */
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.BUYER, UserRole.ISSUER, UserRole.AUDITOR)
   @Patch(':id')
@@ -73,14 +78,11 @@ export class UserController {
     return this.userService.update(id, updateUserDto);
   }
 
-  /**
-   * Endpoint DELETE /user/:id (Hapus user)
-   * Sesuai permintaan: ADMIN (bisa hapus semua) atau User ybs (hapus data sendiri)
-   */
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.BUYER, UserRole.ISSUER, UserRole.AUDITOR)
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.userService.remove(id);
   }
+
 }

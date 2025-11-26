@@ -2,7 +2,7 @@
 
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { UserRole } from '../../user/enums/role.enum';
+import { UserRole } from '../../user/enums/role.enum'; // <-- Pastikan path ini benar
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
 @Injectable()
@@ -10,55 +10,62 @@ export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    // 1. Ambil role apa saja yang DIPERLUKAN dari decorator @Roles
+    // 1. Ambil role apa saja yang DIPERLUKAN
     const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    // Jika endpoint tidak punya @Roles(...), anggap publik (lolos)
     if (!requiredRoles) {
-      return true;
+      return true; // Tidak ada @Roles, lolos
     }
 
-    // 2. Ambil data user dari request (yang sudah diisi oleh JwtStrategy)
+    // 2. Ambil data user
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    // Jika tidak ada data user (misal lupa pasang JwtAuthGuard)
     if (!user || !user.role) {
-      return false;
+      return false; // Tidak ada user (lupa JwtAuthGuard?)
     }
 
-    // 3. LOGIKA INTI:
-    // Cek apakah user adalah ADMIN
-    if (requiredRoles.includes(UserRole.ADMIN) && user.role === UserRole.ADMIN) {
-      // Jika endpoint mengizinkan ADMIN, dan user adalah ADMIN, lolos.
+    // --- 🚀 PERBAIKAN LOGIKA INTI 🚀 ---
+
+    // 3. Cek Super Admin: Admin BISA SEMUANYA
+    // (Asumsi role admin-mu adalah UserRole.ADMIN)
+    if (user.role === UserRole.ADMIN) {
       return true;
     }
 
-    // 4. LOGIKA "DIRI SENDIRI" (untuk non-admin)
-    
-    // Cek dulu apakah role user (misal 'buyer') ada di daftar @Roles
+    // 4. Cek Role: Apakah role user (misal 'issuer') ada di daftar?
     const userRoleAllowed = requiredRoles.includes(user.role);
     if (!userRoleAllowed) {
-      // Jika rolenya (misal 'buyer') tidak ada di @Roles(UserRole.ADMIN),
-      // langsung tolak.
+      // Misal endpoint butuh @Roles(UserRole.ISSUER)
+      // tapi user adalah 'buyer', maka tolak.
       return false;
     }
 
-    // Jika rolenya diizinkan (misal 'buyer' ada di @Roles(..., UserRole.BUYER))
-    // KITA HARUS CEK ID
-    
+    // 5. Cek Kepemilikan (jika perlu)
+    // Sampai di sini, kita tahu role user SUDAH diizinkan.
+    // (Contoh: user 'issuer' mengakses endpoint @Roles(UserRole.ISSUER))
+
     const paramsId = request.params.id;
+
     if (paramsId) {
-      // Jika ada param :id di URL, bandingkan dengan ID user di token
-      // (Ubah 'paramsId' ke angka, karena 'userId' adalah angka)
-      return Number(paramsId) === user.userId;
+      // JIKA ADA :id (misal /user/5 atau /project/abc-123)
+      // Kita harus cek kepemilikan.
+      // Logika ini HANYA untuk endpoint /user/:id
+      if (request.route.path.startsWith('/user/')) {
+        return Number(paramsId) === user.userId;
+      }
+
+      // Nanti kita perlu logika untuk cek kepemilikan /project/:id
+      // Tapi untuk sekarang, asumsikan lolos jika role-nya cocok
+      return true;
     }
 
-    // Jika rolenya non-admin, diizinkan, tapi tidak ada params.id
-    // (misal 'buyer' mencoba akses GET /user), tolak.
-    return false;
+    // JIKA TIDAK ADA :id (misal POST /project)
+    // Role sudah dicek (Langkah 4), dan lolos.
+    // Maka, return true.
+    return true; // <-- INI ADALAH PERBAIKAN UTAMA
   }
 }
